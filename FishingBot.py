@@ -1,55 +1,114 @@
+import time
+
 import cv2
 import numpy as np
 import pyautogui
 import mss
 import pygetwindow as gw
 
-delay = True
 window_name = 'Albion Online Client'
 
 window = gw.getWindowsWithTitle(window_name)[0]
 window.activate()
 
-template = cv2.imread('Image/Temporary2.png', cv2.IMREAD_GRAYSCALE)
+template = cv2.imread('Image/Temporary1.png', cv2.IMREAD_GRAYSCALE)
+pickTemp = cv2.imread('Image/PickUp.png', cv2.IMREAD_GRAYSCALE)
 w, h = template.shape[::-1]
 
 # PickUp x: 637
+# Bite: 458:179
 
 screen_position = {'top': window.top, 'left': window.left, 'width': window.width, 'height': window.height}
+bite_position = {'top': 170, 'left': 450, 'width': 50, 'height': 50}
 screen = mss.mss()
 
+
 def process_image(image):
-    processed_image = cv2.Canny(image, threshold1=100, threshold2=300)
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    processed_image = cv2.Canny(gray, 200, 300)
     return processed_image
 
 
-while delay:
-    frame = np.array(screen.grab(screen_position))
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+def mouse_click(delay):
+    pyautogui.mouseDown(button='left')
+    time.sleep(delay)
+    pyautogui.mouseUp(button='left')
 
-    res = cv2.matchTemplate(frame, template, cv2.TM_CCOEFF_NORMED)
-    threshold = 0.68
-    loc = np.where(res >= threshold)
 
-    for pt in zip(*loc[::-1]):
-        cv2.rectangle(frame, pt, (pt[0] + w, pt[1] + h), (0, 255, 255), 2)
-        for p in frame:
-            pts = (pt[0], pt[1])
-            x = (pt[0])
-            y = (pt[1])
-            print(x)
-            cv2.putText(frame, "%d-%d" % (x, y), (x + 10, y - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 200, 0), 2)
+def fishing_test():
+    threshold = 0.8
+    operation = 0
+
+    while True:
+        image = np.array(screen.grab(screen_position))
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        operation += 1
+        res = cv2.matchTemplate(image, pickTemp, cv2.TM_CCOEFF_NORMED)
+        loc = np.where(res >= threshold)
+        for pt in zip(*loc[::-1]):
+            cv2.rectangle(image, pt, (pt[0] + w, pt[1] + h), (0, 255, 255), 2)
+            for p in image:
+                #pts = (pt[0], pt[1])
+                x = (pt[0])
+                #y = (pt[1])
+                print(x)
+                if x < 635:
+                    mouse_click(2)
+                    x = 0
+                    break
+                elif x < 657:
+                    mouse_click(1.5)
+                    x = 0
+                    break
+                else:
+                    #mouse_click(.1)
+                    continue
+            else:
+                continue
             break
-#        delay = False
-        break
+        print(operation)
 
-    processed_image = process_image(frame)
-    mean = np.mean(processed_image)
-    print('mean = ', mean)
-    if mean <= float(7): # усреднение картинки...
-        delay = False
+        if operation >= 50:
+            return
 
-cv2.imshow('screenshot', processed_image)
-if cv2.waitKey(0):
-    cv2.destroyAllWindows()
+
+def waiting_bite():
+    last_time = time.time()
+
+    while True:
+        image = np.array(screen.grab(bite_position))
+
+        processed_image = process_image(image)
+        mean = np.mean(processed_image)
+        print('mean = ', mean)
+
+        if mean <= float(2):
+            return 1
+
+        delta = time.time() - last_time
+        if delta > 60:
+            return 0
+
+
+fish_repeat = 500
+
+while fish_repeat >= 0:
+    pyautogui.moveTo(431, 175, duration = 1)
+    mouse_click(0.5)
+    time.sleep(3)
+
+    state = waiting_bite()
+    if state == 1:
+        mouse_click(1)
+        fishing_test()
+
+    pyautogui.keyDown('s')
+    time.sleep(0.2)
+    pyautogui.keyUp('s')
+    print(f'Осталось {fish_repeat} повторов')
+    fish_repeat -= 1
+
+    if cv2.waitKey(25) & 0xFF == ord("z"):
+        fish_repeat = -1
+
