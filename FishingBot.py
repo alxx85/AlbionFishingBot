@@ -69,7 +69,7 @@ def fishing_test():
             break
         print(operation)
 
-        if operation >= 50:
+        if operation >= 40:
             return
 
 
@@ -83,7 +83,7 @@ def waiting_bite():
         mean = np.mean(processed_image)
         print('mean = ', mean)
 
-        if mean <= float(2):
+        if mean <= float(1.8):
             return 1
 
         delta = time.time() - last_time
@@ -91,12 +91,12 @@ def waiting_bite():
             return 0
 
 
-fish_repeat = 500
+fish_repeat = 1500
 
 while fish_repeat >= 0:
-    pyautogui.moveTo(431, 175, duration = 1)
+    pyautogui.moveTo(431, 175, 0.5)
     mouse_click(0.5)
-    time.sleep(3)
+    time.sleep(1.5)
 
     state = waiting_bite()
     if state == 1:
@@ -104,11 +104,10 @@ while fish_repeat >= 0:
         fishing_test()
 
     pyautogui.keyDown('s')
-    time.sleep(0.2)
+    # time.sleep(0.2)
     pyautogui.keyUp('s')
     print(f'Осталось {fish_repeat} повторов')
     fish_repeat -= 1
 
-    if cv2.waitKey(25) & 0xFF == ord("z"):
-        fish_repeat = -1
-
+    # if cv2.waitKey(25) & 0xFF == ord("z"):
+    #     fish_repeat = -1
